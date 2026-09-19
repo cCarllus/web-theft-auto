@@ -10,6 +10,7 @@ Plan: `.claude/plans/015-vehicle-loading.md`. Parse vehicle data + place two car
 **Files (all verified present + parse):** `static/vehicles/{admiral,camper}.dff`+`.txd` (DXT1), `static/models/generic/vehicle.txd` (19 tex rgba8888, shared); `static/data/vehicles.ide`, `carcols.dat`, `handling.cfg`.
 
 **Formats:**
+
 - `vehicles.ide` `cars`: `id, model, txd, type, handlingId, gameName, anims, class, frq, flags, comprules, wheelModelId, wheelScaleFront, wheelScaleRear, upgradeClass`. **admiral 0.68/0.68, camper 0.66/0.66.**
 - `carcols.dat`: `col`…`end` = **palette** (`R,G,B  # idx name` per line, index by order); `car`…`end` = per-car **2-colour** combos (`name, p,s, p,s,…` palette-index pairs); `car4`…`end` = **4-colour** (`name, c1,c2,c3,c4,…`). admiral=`34,34 35,35…`; camper=`1,31,1,0…`. Names lowercased; strip `#`.
 - `handling.cfg`: one line per `handlingId` = ~30 space-separated physics fields (mass, drag, dims, centre-of-mass, %submerged, traction, gears, max speed…). **Parse into a dict now (`parseHandling`); physics uses it later.**

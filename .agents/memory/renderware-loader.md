@@ -1,7 +1,7 @@
 ---
 name: renderware-loader
 description: GTA SA RenderWare DFF/TXD loader architecture in this project
-metadata: 
+metadata:
   node_type: memory
   type: project
   originSessionId: 9c42fe2a-bd64-4999-af30-043b1ca3dd5c
@@ -10,6 +10,7 @@ metadata:
 This project (opensa) loads real GTA San Andreas RenderWare assets into a WebGL scene. The render is **imperative three.js** (the engine in `src/game/`); React is only a thin canvas mount + DOM debug overlay (post engine refactor — see [[engine-refactor-status]]). Test assets live in `static/` (`bsor_cedar1_hi.dff`, `bsor.txd` ~49MB), served via `npm run serve:static` (serve on :3001, CORS) with `VITE_STATIC_URL` in `.env`.
 
 Loader lives in `src/renderware/`, deliberately layered:
+
 - `parsers/binary/*` — renderer-agnostic binary parsing (no three.js imports): `binary-stream` (LE DataView cursor), `chunks` (RW 12-byte chunk header `[type:u32][size:u32][version:u32]` + `findChild`/`forEachChild` walkers), `constants`, `types` (RWClump/RWGeometry/RWTextureDictionary data model), `dff` (`parseDff`), `txd` (`parseTxd`). (Map text parsers live next door in `parsers/text/`.)
 - `three/*` — adapter: `build-clump.ts` (RWClump→Group, groups triangles by material, computes normals when absent, rotates Z-up→Y-up), `build-texture.ts` (DXT1/3/5→CompressedTexture, 8888/palette→DataTexture), `dff-loader.ts`/`txd-loader.ts` (THREE.Loader subclasses; `DFFLoader.setTextures(map)`). The loaders still exist but are **no longer used via R3F `useLoader`** — `archive/asset-cache.ts` reads clumps/textures synchronously from the archive instead.
 

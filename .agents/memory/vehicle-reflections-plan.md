@@ -23,7 +23,7 @@ probe; PC/PS2 = additive screen-locked SA env smear; off = matte.
 
 **Phase 2 done (preset registry + material plumbing):** `game/plugins/vehicle-reflection/` = `presets.ts`
 (`ReflectionPreset` interface + `PRESETS` record {PC, PS2, enhanced}; extensible — one entry per preset, code
-branches on a preset's *fields* source/technique/metalness/roughness/reflectivity/specular, never its name) +
+branches on a preset's _fields_ source/technique/metalness/roughness/reflectivity/specular, never its name) +
 `vehicle-reflection.plugin.ts` (`VehicleReflectionPlugin`). `Config.graphics.vehicleReflection { preset:string,
 intensity }` (default `enhanced`, +4 fixtures), `Game.setVehicleReflection`. `buildMaterial` (renderware/three)
 tags reflective materials with `userData.reflection` (raw DFF data, shape = `VehicleReflectionData` in the
@@ -54,9 +54,10 @@ reflection?: {intensity, offset, scale}, specular?: {level, texture} }`, parsed 
 (`MATFX 0x120`, `REFLECTION_MAT 0x253f2fc`, `SPECULAR_MAT 0x253f2f6` in `constants.ts` + `MatFxEffect` enum).
 The MatFX **embeds the env-texture name** (per-material coefficient 0/0.5/1) — usually `vehicleenvmap128`/
 `xvehicleenv128`, but **can be custom per car** (our bundled "admiral" is a custom Mustang → `generic_reflection01`
-+ `vehicle_generic_chromeprts` from its own TXD) → resolve against the merged car+generic texture map. Tests in
-`dff.test.ts` (synthetic + gated real `admiral.dff`). **PC/PS2 fidelity DECIDED: build the faithful SA
-sphere-map shader (phase 4), not a PBR approximation.**
+
+- `vehicle_generic_chromeprts` from its own TXD) → resolve against the merged car+generic texture map. Tests in
+  `dff.test.ts` (synthetic + gated real `admiral.dff`). **PC/PS2 fidelity DECIDED: build the faithful SA
+  sphere-map shader (phase 4), not a PBR approximation.**
 
 **Driven by an extensible PRESET** (`Config.graphics.vehicleReflection.preset`, inspired by SkyGFX's
 per-platform pipelines): **`PC`** = faithful original (static `vehicleenvmap128` sphere-map via a custom
@@ -64,17 +65,18 @@ per-platform pipelines): **`PC`** = faithful original (static `vehicleenvmap128`
 brighter/glossier; **`enhanced`** = our improved path (real **sky-cube probe** via three PBR `envMap`, like
 Xbox "neo" world reflections). Presets are a **strategy registry** (`ReflectionPreset` interface + `PRESETS`
 record); `preset` is a plain string key into it → **adding a preset = one entry, code branches on the
-preset's *fields* (source/technique/intensity/specular), never its name**. DFF data (which materials reflect,
+preset's _fields_ (source/technique/intensity/specular), never its name**. DFF data (which materials reflect,
 coefficient, intensity, specular) is parsed once, preset-independent. NB: three's built-in `envMap` ≠ SA's
 sphere-map, so `PC`/`PS2` need a custom shader (the two techniques are separate code paths the preset picks).
 
 **Research (verified by decoding `static/vehicles/admiral.dff` + `static/models/generic/vehicle.txd`):** SA
 car body materials carry three RenderWare **material-plugin extension chunks** the current `dff.ts`
 **ignores** (they sit as direct children of the Material chunk, after the `TEXTURE`):
+
 - **MatFX (Material Effects) `0x0120`** — `effectType=2` (ENVMAP), `coefficient` (admiral 0.5),
   `useFrameBufferAlpha`, optional env Texture child (**SA omits it → uses a global env texture**).
 - **Reflection Material `0x0253F2FC`** (24 B, SA custom pipeline) — `scaleX,scaleY,offsetX,offsetY` (1,1,1,1)
-  + `intensity` (0.03) + u32. ⚠️ exact field order/semantics to re-verify in code across cars.
+  - `intensity` (0.03) + u32. ⚠️ exact field order/semantics to re-verify in code across cars.
 - **Specular Material `0x0253F2F6`** (28 B) — `level` (0.12) + 24-char tex name (**`vehiclespecdot64`**).
 - (`0x0253F2FD`, 4 B at geometry-ext level = unidentified SA plugin, **not** reflection — ignore.)
 

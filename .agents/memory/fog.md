@@ -10,7 +10,7 @@ Plan 024 (`.claude/plans/024-fog.md`), DONE. GTA-style distance fog hiding the f
 - `Config.fog: FogConfig { distance: number }` — default **800** (canvas-host) + the 4 config test fixtures.
 - `FogPlugin` (`src/game/plugins/fog.plugin.ts`, registered in canvas-host like the light plugins):
   **exponential** `THREE.FogExp2(FOG_COLOR, density)` with `density = FOG_K(2) / config.fog.distance` on
-  `scene.fog` (user preferred this over linear `Fog` — linear only *tinted* the mid-distance; exp2 actually
+  `scene.fog` (user preferred this over linear `Fog` — linear only _tinted_ the mid-distance; exp2 actually
   dissolves the far world: ~63% fogged at 0.5×distance, ~90% at 0.75×, ~98% at distance), and
   `scene.background = FOG_COLOR`
   (0x9fb4c8) so the fully-fogged distance reads as horizon, not black (no sky system yet). Reacts to

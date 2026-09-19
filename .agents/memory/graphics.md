@@ -25,8 +25,8 @@ canvas-host). `sunElevation(hour)`: sun arcs east(+X)→south(+Z)→west(−X), 
 horizon outside SUNRISE(6)–SUNSET(20). Two additive sun sprites (core `sunCore`×`sunSize`, corona
 `sunCorona`×`sunSize`, opacity=`spriteBright`), unfogged, depth-tested, hidden at night. Directional light
 tracks the sun (colour `dir`, intensity `SUN_INTENSITY·max(0,sin elev)`); ambient lerps
-AMBIENT_NIGHT↔AMBIENT_DAY by sun height. EXTRASUNNY `dir`/`dirMult` are constant → day/night rides
-sun-height, not timecyc dir. Tunables: SUNRISE/SUNSET/MAX_ELEVATION/SUN_INTENSITY/AMBIENT_*/CORE_SCALE/
+AMBIENT*NIGHT↔AMBIENT_DAY by sun height. EXTRASUNNY `dir`/`dirMult` are constant → day/night rides
+sun-height, not timecyc dir. Tunables: SUNRISE/SUNSET/MAX_ELEVATION/SUN_INTENSITY/AMBIENT*\*/CORE_SCALE/
 CORONA_SCALE. Caveat: prelit vertex colours bake daytime light → night not fully dark yet (later: modulate
 prelit by timecyc). Phase 3 (fog colour from timecyc) already DONE.
 
@@ -106,7 +106,7 @@ later).** It was real **depth-based** foam: each frame `WaterPlugin` did a depth
 `scene.overrideMaterial = MeshDepthMaterial`, render to a `WebGLRenderTarget` + 24-bit `DepthTexture`), and the
 water fragment compared scene depth (`perspectiveDepthToViewZ` from `#include <packing>`) to its own viewdist
 → small gap = foam, FBM-noise-textured. Two problems: the extra depth-only **full-scene render** is real
-overhead, and the *look* was mediocre (too wide on gentle beaches, blotchy). **Fully reverted** — no depth
+overhead, and the _look_ was mediocre (too wide on gentle beaches, blotchy). **Fully reverted** — no depth
 target, no `water.foam` config/slider; `WaterConfig` is back to `{ glint, reflection }`. Future redo ideas:
 real foam **texture** scrolled along the shore; thinner band + distance-fade; inward wave-wash animation;
 **reuse an existing depth source** instead of a dedicated pre-pass (so no second scene render).
@@ -140,7 +140,7 @@ in the light's right/up basis**, not world axes — world-axis snapping doesn't 
 shadows kept crawling/shimmering (`shadowForward = −sunDir`, snap focus's right/up dot-products to the texel).
 (3) Keep `normalBias` **small (0.6)** — high values (2.5) bloat thin objects' shadows. (4) **Alpha-tested map
 geometry (foliage/fences/wires) has `castShadow = false`** (`build-region`: `!part.material.transparent`) — its
-1-bit cutout shimmers unfixably in the shadow map; it still *receives* shadows. (map InstancedMeshes are
+1-bit cutout shimmers unfixably in the shadow map; it still _receives_ shadows. (map InstancedMeshes are
 single-material, so this is per-material clean.) Tunables: SHADOW_SIZE 140 (frustum reach), SHADOW_MAP 2048
 (quality vs cost — an extra in-frustum scene render each frame).
 
@@ -150,7 +150,7 @@ placed right after the RenderPass (darkens corners/contacts before god-rays/bloo
 { enabled, intensity, radius }` (default on, intensity 1.5, radius 0.2; +4 fixtures), `Game.setSsao`, debug
 SSAO checkbox + AO INTENSITY / AO RADIUS sliders. **enabled=false skips the NormalPass + SSAO pass entirely
 (zero cost — the NormalPass is an extra full-scene normal render).** Shadows (directional shadow map) chosen
-as the *later* big step; SSAO first (user 2026-06-08).
+as the _later_ big step; SSAO first (user 2026-06-08).
 
 **Gotcha — composer MSAA crashed the scene (`glBlitFramebuffer: Depth/stencil buffer format combination
 not allowed for blit`, scene wouldn't load):** `EffectComposer({ multisampling: 4 })` can't resolve a

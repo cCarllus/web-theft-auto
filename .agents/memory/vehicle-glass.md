@@ -19,6 +19,6 @@ ported to three.js.
   materials are clones with the side set. Glass material indices = `material.transparent`.
 - Callers (addPanel/addDoor/body/`_vlo`, damage `ok`/`dam` toggles, vehicle-viewer) treat the result as
   one `Object3D` — `Group.visible`/`applyMatrix4`/`name` all work, so nothing else changed.
-- Residual (acceptable): two *separate* panes at the same object-z can still tint-order oddly (rare, not
+- Residual (acceptable): two _separate_ panes at the same object-z can still tint-order oddly (rare, not
   a disappearance). Fallback option C (alpha-test) noted in the plan if ever needed. Render-only — no
   collision/physics impact. Related: [[standalone-viewers]].
