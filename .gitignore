@@ -83,3 +83,4 @@ tools/vehicle-optimizer/out/
 
 # Nx cache
 .nx/
+/game-unity/
