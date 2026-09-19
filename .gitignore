@@ -1,0 +1,85 @@
+# compiled output
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/coverage-e2e
+/.nyc_output
+
+# Playwright (the e2e/**-snapshots/ baselines stay committed)
+/test-results
+/playwright-report
+/blob-report
+/.last-run.json
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.production
+.env.*.local
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+
+# Everything under static/ is generated from a local GTA copy and gitignored: the built game archives
+# (npm run build:game) and the viewer fixtures (npm run viewer:assets — extracted from game-src/non-modified).
+# No Rockstar assets are committed.
+/static/
+game-src
+issues
+ideas
+blog-src
+
+# map-optimizer / lod-generator are tracked sub-projects; ignore only their generated output + local scratch.
+tools/map-optimizer/out/
+tools/map-optimizer/*.jpg
+tools/lod-generator/out/
+tools/vehicle-optimizer/out/
+
+# Real GTA SA test fixtures (Rockstar assets — not redistributed): regenerated locally from a stock
+# copy at game-src/non-modified via `npm run test:fixtures`. Committed fixtures (mods + curated /
+# version-pinned test models) live in tests/custom/, which stays tracked.
+/tests/original/
+
+# Nx cache
+.nx/
