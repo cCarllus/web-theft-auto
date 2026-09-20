@@ -1,0 +1,48 @@
+x-dev-service: &dev-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: web-theft-auto-dev
+  working_dir: /workspace
+  volumes:
+    - .:/workspace
+    - node_modules:/workspace/node_modules
+
+services:
+  web:
+    <<: *dev-service
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      VITE_STATIC_URL: http://localhost:3001
+    ports:
+      - "5173:5173"
+
+  static:
+    <<: *dev-service
+    command: npm run serve:static
+    environment:
+      PORT: "3001"
+    ports:
+      - "3001:3001"
+
+  fixtures:
+    <<: *dev-service
+    profiles:
+      - tools
+    command: npm run test:fixtures
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/node_modules
+      - type: bind
+        source: ${GTA_SA_PATH:-./game-src/non-modified}
+        target: /workspace/game-src/non-modified
+        read_only: true
+
+  test:
+    <<: *dev-service
+    profiles:
+      - tools
+    command: npm test
+
+volumes:
+  node_modules:
