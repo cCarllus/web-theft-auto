@@ -5,6 +5,7 @@ Web Theft Auto already has mature exterior world streaming, collision streaming,
 The current repository confirms the following constraints:
 
 - `parseIpl()` handles only the textual IPL `inst` section. `enex` is ignored.
+- The existing DFF 2DFX parser handles types 0 (light), 1 (particle), 7 (roadsign), and 10 (escalator), but currently skips type 6 Enter-Exit entries even though the plugin already preserves each effect's geometry-local position/type/size framing.
 - `interiorId()` already extracts the low byte of the placement area value, and `isInterior()` already treats area 13 as open-world data rather than a hidden interior.
 - `buildWorldGrid()` currently drops hidden-interior placements entirely.
 - `StreamingSystem` and `CollisionStreamingSystem` key cells only by X/Y (plus HD/LOD for render) and do not consume active-area state.
@@ -26,10 +27,10 @@ Unity-specific concepts are not part of this design.
 
 # Goals
 
-- Support faithful GTA SA ENEX parsing and runtime transitions between exterior and hidden interiors.
+- Support faithful GTA SA ENEX parsing from both textual IPLs and DFF 2DFX type 6 effects, normalized into one runtime/pairing model.
 - Include all DFF/TXD assets required only by interiors in both VFS construction paths.
 - Model the active GTA area explicitly and make render/collision streaming area-aware.
-- Guarantee target interior collision is ready before player control is released after a transition.
+- Guarantee target interior render meshes and collision are ready before player control is released after a transition, or keep the transition/fade blocked until visual readiness completes.
 - Parse all relevant data in `nodes0.dat` through `nodes63.dat` without losing unknown/raw metadata.
 - Lazily load path areas by the original 8x8 spatial division instead of parsing the entire graph at boot.
 - Expose a GTA-independent navigation graph interface to the game core.
@@ -123,6 +124,47 @@ The canonical named flag mapping follows gta-reversed's `CEntryExit::eFlags` for
 - bit 15: delete ENEX.
 
 Documentation disagreements around historically reverse-engineered names do not justify discarding bits. The raw flag word survives round-trip parsing and unsupported flags remain available as metadata.
+
+## 3A. Normalize DFF 2DFX type 6 ENEX with textual IPL ENEX
+
+The DFF parser already walks GTA's 2DFX plugin entry framing and skips unknown entry types by their declared size. Extend that parser for native type 6 Enter-Exit entries instead of creating a separate binary-effects pipeline.
+
+A renderer-agnostic 2DFX ENEX record preserves at least:
+
+- the common geometry-local effect position;
+- entrance angle;
+- entrance radius X/Y;
+- exit position/offset exactly as authored by the native record;
+- exit angle;
+- target interior/area;
+- raw 16-bit flags;
+- 8-byte name;
+- time on;
+- time off;
+- sky color;
+- the final native unknown byte/raw data required for lossless parsing.
+
+The source-specific record remains distinguishable for debugging/tests, but runtime pairing does not operate on two unrelated ENEX systems. A normalization layer converts textual IPL ENEX and placed 2DFX ENEX into the same normalized entry/exit descriptor.
+
+For a 2DFX ENEX attached to a placed DFF instance:
+
+1. locate the effect in geometry/model local space;
+2. apply any clump/frame transform required to obtain object-local effect coordinates, following the same placement walk used by existing geometry-local 2DFX effects;
+3. transform the entrance point by the IPL instance/object world transform;
+4. transform the authored exit point/offset with the correct point/vector semantics from the native type-6 format;
+5. transform entrance/exit heading semantics through the instance orientation rather than merely copying local angles;
+6. retain the originating model/instance/effect identity for stable IDs and diagnostics;
+7. insert the resulting ENEX into the same resolved list used by textual IPL entries before pairing/runtime activation.
+
+This preserves the original object-authored ENEX locations. It also avoids the incorrect outcome where an interior marker embedded in a building DFF exists in the game data but remains inaccessible because only textual IPL `enex` was implemented.
+
+2DFX ENEX discovery is world metadata, not a render-side effect. The provider MUST NOT require the host mesh to have already been attached to the Three.js scene before the ENEX can exist. The implementation may build/cache metadata lazily by relevant area/cell and unique model DFF, but it must:
+
+- discover type-6 metadata from placed model DFFs independently from visual mesh attachment;
+- cache parsed per-model 2DFX metadata and instantiate/transform it per world placement;
+- ensure source-area ENEX metadata is available before trigger queries;
+- ensure any target-area metadata required for pair/link resolution is discoverable during target preparation;
+- make registration/pairing deterministic regardless of render streaming timing.
 
 ## 4. Separate static ENEX flags from mutable runtime access
 
@@ -219,6 +261,28 @@ Rules:
 
 Implementation work should compare the final resolver against gta-reversed `CEntryExitManager` behavior rather than copy SanAndreasUnity's simple "same name" heuristic.
 
+## 8A. Match GTA trigger and teleport semantics instead of using generic boxes
+
+ENEX containment must follow `CEntryExit` semantics rather than treating entrance size as an arbitrary axis-aligned/generic 3D box.
+
+The normalized ENEX runtime therefore exposes enough source geometry to evaluate the GTA-style trigger:
+
+- the entrance footprint is a rectangle in XY using the authored entrance radii/extents;
+- that rectangle is rotated by the authored/transformed `entranceAngle`;
+- vertical acceptance follows the dedicated GTA ENEX vertical test/limits, not an unrelated generic XYZ-box containment helper;
+- 2DFX type 6 entries use the same world-space trigger test after instance transformation.
+
+Teleport destination resolution is also directional and link-aware:
+
+- a paired ENEX transition resolves the destination/spawn point through the linked `CEntryExit` semantics;
+- target area/interior and spawn coordinates come from the relevant source/link side, not from a blanket rule that always uses the other record's `exitPosition`;
+- final heading follows `CEntryExit` rotation semantics for that transition direction; implementation MUST NOT assume that the destination heading is always simply the counterpart record's `exitAngle`;
+- one-way/unpaired entries retain their own authored destination semantics.
+
+Before committing the player transform, run the equivalent of GTA's `FindValidTeleportPoint()`: validate/correct the candidate destination against collision/world geometry so the player is not spawned inside a wall, prop, floor, or other invalid solid location. The exact implementation can use the existing physics/collision query capabilities, but the behavior belongs to the entry/exit transition layer rather than a generic player-controller hack.
+
+Synthetic tests must cover rotated entrance rectangles, vertical rejection/acceptance, both directions of a pair, headings that would fail under a naive counterpart-`ExitAngle` rule, and collision-adjusted teleport placement.
+
 ## 9. Interior transitions use an explicit state machine
 
 Create an `InteriorTransitionSystem` (or equivalently scoped system) that does not live inside `CharacterControllerSystem`.
@@ -232,14 +296,15 @@ State model:
 2. **PreparingTarget**
    - resolve linked target/direction and target area;
    - suspend transition re-entry and player-controlled locomotion;
-   - ask area streaming/collision services to prepare the destination neighborhood.
+   - resolve the GTA-valid teleport destination/heading, including safe-point correction;
+   - ask area streaming services to prepare both destination render meshes and collision for the destination neighborhood.
 
 3. **Committing**
-   - once required destination collision is confirmed available, switch active area;
+   - once required destination render and collision readiness are confirmed (or the transition/fade remains intentionally blocked until render readiness completes), switch active area;
    - remove or hide incompatible source-area render content;
    - replace incompatible source-area collision;
-   - place the player at the GTA-resolved destination/exit position;
-   - apply destination heading;
+   - place the player at the GTA-resolved and collision-validated teleport point;
+   - apply the GTA-resolved transition heading rather than assuming the counterpart's `exitAngle`;
    - synchronize camera/follow state as needed without re-owning camera logic.
 
 4. **Suppressed**
@@ -254,20 +319,29 @@ This handles exterior -> interior, interior -> exterior, and interior -> interio
 
 A transition is atomic from the player's perspective. If target preparation fails or is cancelled, the runtime keeps/restores the source area and source player state instead of leaving the player in an unloaded interior.
 
-## 10. Destination collision readiness is a first-class contract
+## 10. Destination render and collision readiness are first-class contracts
 
-The current collision streamer is intentionally asynchronous and eventually loads nearby cells. That is insufficient for teleport transitions.
+The current render and collision streamers are intentionally asynchronous and eventually load nearby cells. That is acceptable for ordinary movement but insufficient for a teleport transition into a different interior area.
 
-Add a readiness/prewarm operation on the narrow area streaming/collision abstraction that can:
+Add readiness/prewarm operations on the narrow area streaming abstraction that can:
 
-- request the target area's collision around a target position;
-- resolve when the required target cell(s) are created in the physics world;
+- request target-area render content around the resolved teleport position;
+- resolve when the minimum required destination meshes are built/attached and available for the first revealed frame;
+- request the target area's collision around the same position;
+- resolve when the required target static bodies are created in the physics world;
 - reject/cancel on load failure;
 - distinguish stale requests when another transition supersedes the current one.
 
-The transition system MUST NOT release the player's physics/controller at the destination before this promise/handle reports readiness.
+The transition system MUST NOT release the player's physics/controller before collision readiness is confirmed.
 
-Normal exterior movement continues to use background collision streaming exactly as today.
+For visual readiness, either:
+
+1. require both render and collision readiness before committing/revealing the destination; or
+2. commit the hidden/faded area switch after collision readiness but keep the fade/transition screen blocked until destination render readiness is confirmed.
+
+The implementation MUST NOT reveal normal player control/camera on an empty interior frame merely because collision loaded first.
+
+Normal exterior movement continues to use background render/collision streaming exactly as today.
 
 ## 11. Make interior asset selection a shared game-build operation
 
@@ -701,16 +775,18 @@ Debug data is obtained through provider/system inspection APIs rather than reach
 
 ## Interior data and assets
 
-1. GTA install / packed VFS provides `gta.dat`, IDEs, text IPLs, binary IPLs, IMG entries, and collision.
+1. GTA install / packed VFS provides `gta.dat`, IDEs, text IPLs, binary IPLs, DFFs/2DFX, IMG entries, and collision.
 2. Shared build selection scans placements including interior textual IPLs and resolves all referenced DFF/TXD names.
 3. Fetch build or File System Access loader materializes the same selected asset set into the VFS.
-4. `resolveMap()` parses IDE definitions, placement instances, and ENEX data.
-5. Area indexing groups placements into exterior (0 + 13) or hidden area N.
-6. GTA adapter exposes area-keyed render/collision loaders plus normalized ENEX descriptors.
-7. `InteriorTransitionSystem` detects an eligible source ENEX.
-8. Target render/collision is prepared.
-9. Active area, collision set, player transform, and heading are committed.
-10. Destination trigger remains suppressed until exited.
+4. `resolveMap()` parses IDE definitions, placement instances, and textual ENEX data; DFF parsing exposes type-6 2DFX ENEX on placed models.
+5. Placed 2DFX ENEX entries are transformed through model/frame + instance transforms and normalized with textual ENEX before link resolution.
+6. Area indexing groups placements into exterior (0 + 13) or hidden area N.
+7. GTA adapter exposes area-keyed render/collision loaders plus normalized ENEX descriptors.
+8. `InteriorTransitionSystem` detects a containing/eligible source ENEX using the rotated XY + GTA vertical trigger semantics.
+9. The linked/directional spawn point, area, heading, and collision-safe teleport point are resolved.
+10. Target render and collision are prewarmed; the fade/transition remains blocked until the chosen readiness policy is satisfied.
+11. Active area, collision set, player transform, and heading are committed/revealed.
+12. Destination trigger remains suppressed until exited.
 
 ## Path data
 
@@ -726,7 +802,7 @@ Debug data is obtained through provider/system inspection APIs rather than reach
 
 ## ENEX/parser failures
 
-- Malformed ENEX rows are rejected/skipped according to parser conventions without manufacturing default positions.
+- Malformed textual ENEX rows and malformed/truncated 2DFX type 6 records are rejected/skipped according to parser conventions without manufacturing default positions.
 - Invalid numeric fields do not produce non-finite runtime transforms.
 - Quoted names containing spaces remain intact.
 - Unknown flag bits are preserved.
@@ -736,6 +812,7 @@ Debug data is obtained through provider/system inspection APIs rather than reach
 ## Interior load failures
 
 - Failure to prepare target collision aborts the transition before destination control is released.
+- Failure to prepare target render content keeps the destination hidden/faded or aborts according to the chosen readiness policy; an empty interior must not be revealed as a successful transition.
 - A stale preparation result cannot commit after a newer transition request supersedes it.
 - Source-area state remains/restores coherently after failure.
 - Render/collision cache keys contain area identity so same X/Y cell coordinates from different areas cannot alias.
@@ -869,11 +946,12 @@ Required validation includes:
 - `npm run lint:ts`;
 - `npm test`;
 - GTA-backed tests after `npm run test:fixtures`;
-- parser tests over synthetic exact bytes/rows and real GTA fixtures;
+- parser tests over synthetic exact bytes/rows and real GTA fixtures, including DFF 2DFX type 6 ENEX;
 - fetch/build versus local-loader interior asset parity;
 - browser validation entering and exiting at least one real GTA SA interior;
-- correct interior objects/textures and collision at the destination;
+- correct interior objects/textures and collision at the destination, with no revealed empty-frame transition;
 - exterior -> interior, interior -> exterior, and interior -> interior transition tests;
+- rotated ENEX trigger/vertical semantics, directional linked-pair spawn/heading semantics, and safe teleport-point correction;
 - real route calculation over `nodes15.dat`;
 - a route that crosses at least one path-area boundary;
 - no regression in current exterior render/collision streaming;
@@ -887,8 +965,8 @@ Implementation should verify behavior against these sources rather than copying 
 - Web Theft Auto repository files listed in this change proposal/request.
 - SanAndreasUnity (branch `dev`): https://github.com/in0finite/SanAndreasUnity
 - gta-reversed: https://github.com/gta-reversed/gta-reversed
-- gta-reversed `source/game_sa/EntryExit.cpp/.h` and `EntryExitManager.cpp/.h`.
+- gta-reversed `source/game_sa/EntryExit.cpp/.h` and `EntryExitManager.cpp/.h`, including `IsInArea()` and `FindValidTeleportPoint()` behavior.
 - gta-reversed `source/game_sa/PathFind.cpp/.h`.
-- GTA technical documentation describing SA IPL ENEX and `nodes*.dat`.
+- GTA technical documentation describing SA IPL ENEX, DFF 2DFX type 6 Enter-Exit records, and `nodes*.dat`.
 
 There are no blocking open questions for implementation. Ambiguous reverse-engineered flag labels are handled by raw preservation plus fixture/behavior validation rather than deferred architecture decisions.

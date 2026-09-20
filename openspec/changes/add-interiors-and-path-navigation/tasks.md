@@ -13,7 +13,14 @@
 - [ ] 2.2 Extend textual IPL parsing so `enex` is parsed while preserving the existing `parseIpl()` instance-only API for existing callers.
 - [ ] 2.3 Add ENEX parser tests for every field, quoted names, malformed/short rows, invalid numeric data, raw/decoded flags, time values, and source order.
 - [ ] 2.4 Extend the real `int_cont.ipl` parser test so GTA-backed runs prove real ENEX records parse with finite transforms and preserved metadata.
-- [ ] 2.5 Extend `MapDefinitions` and `resolveMap()` so resolved maps expose ENEX in addition to instances, preserving deterministic IPL/source order. Verify existing map-resolution tests remain green.
+- [ ] 2.5 Extend `MapDefinitions` and `resolveMap()` so resolved maps expose textual ENEX in addition to instances, preserving deterministic IPL/source order. Verify existing map-resolution tests remain green.
+- [ ] 2.6 Extend the existing DFF 2DFX parser with native type 6 Enter-Exit support, preserving common local position, entrance angle, radius X/Y, authored exit point/offset, exit angle, interior/area, raw flags, 8-byte name, time-on/off, sky color, and the final unknown/raw byte; keep types 0/1/7/10 unchanged.
+- [ ] 2.7 Add synthetic byte-exact DFF tests for type 6 field layout, coexistence with other 2DFX entry types, declared-size skipping, malformed/truncated data, and raw-field preservation.
+- [ ] 2.8 Add a renderer-agnostic normalization step that transforms placed type 6 ENEX through geometry/frame + IPL instance transforms into world-space entry/exit data, including correct point/vector treatment of the native exit field and transformed heading semantics.
+- [ ] 2.9 Normalize textual IPL and placed DFF type 6 ENEX into one stable-ID collection/provider before pairing/runtime access, while retaining source kind/model/instance/effect identity for diagnostics.
+- [ ] 2.10 Make 2DFX ENEX discovery independent from Three.js mesh attachment: cache parsed type-6 metadata per model, instantiate/transform it per world placement, load relevant source/target area metadata on demand, and guarantee deterministic registration/pairing regardless of render-streaming timing.
+- [ ] 2.11 Add normalization/discovery tests for translated/rotated object instances, local-to-world entrance/exit coordinates, transformed headings, mixed IPL + 2DFX collections, metadata availability before mesh attachment, cache reuse across repeated model placements, and deterministic results under different streaming order.
+- [ ] 2.12 Scan a clean stock GTA SA fixture source for type-6 2DFX records and add at least one reproducible real DFF fixture/test when stock data contains them; if none are present in the tested stock edition, record that inventory result and retain the byte-exact synthetic coverage instead of silently omitting the case.
 
 ## 3. Interior-aware shared asset selection
 
@@ -37,12 +44,14 @@
 - [ ] 5.3 Make `StreamingSystem` consume active-area state (or an equivalent narrow provider) so desired keys include the area and incompatible loaded cells are removed on an area change.
 - [ ] 5.4 Preserve current seamless HD/LOD swap, fade, manual map-viewer selection, and hysteresis behavior within an area.
 - [ ] 5.5 Add streaming tests for exterior -> interior, interior -> exterior, interior -> interior, same-cell/different-area cache separation, area 13 exterior visibility, and existing exterior LOD regression cases.
+- [ ] 5.6 Add a narrow target-area render prewarm/readiness API that can request destination meshes around a teleport point, report when the minimum revealable interior content is attached/ready, reject/cancel failures, and ignore stale completions after a superseding transition.
+- [ ] 5.7 Add render-readiness tests for successful prewarm, collision-ready/render-pending ordering, stale cancellation, render failure, and same-coordinate/different-area cache separation.
 
 ## 6. Active-area collision streaming and readiness
 
 - [ ] 6.1 Extend GTA collider loading/cache keys with area identity and bind only placements compatible with the requested area.
 - [ ] 6.2 Make `CollisionStreamingSystem` react to active-area changes by removing incompatible static bodies and loading compatible target-area bodies without breaking breakable-object bookkeeping.
-- [ ] 6.3 Add a narrow target-area collision prewarm/readiness operation that resolves only after required destination static bodies are installed in the physics world and can be cancelled/superseded safely.
+- [ ] 6.3 Add a narrow target-area collision prewarm/readiness operation that resolves only after required destination static bodies are installed in the physics world and can be cancelled/superseded safely; define its composition with render readiness through the shared area-transition preparation contract.
 - [ ] 6.4 Add tests for exterior/interior collision filtering, overlapping cell coordinates across areas, area-switch body removal, destination readiness, cancellation/stale completion, load failure, and current breakable/reload behavior.
 
 ## 7. ENEX pairing and interior transition runtime
@@ -51,11 +60,15 @@
 - [ ] 7.2 Implement pairing using gta-reversed `CEntryExitManager` semantics as the behavior reference: linked-pair flags, stable source/load order, one-to-one assignment, name as a candidate key rather than the sole criterion, and deterministic handling of duplicate names.
 - [ ] 7.3 Add pairing tests for simple linked pairs, duplicate names, order-sensitive candidates, one-way/unpaired entries, invalid candidates, exterior/interior pairs, and interior/interior pairs.
 - [ ] 7.4 Add runtime ENEX access state separate from immutable raw flags, with a future-facing enable/disable API and default behavior matching normal GTA entries.
-- [ ] 7.5 Implement eligibility helpers for active source area, containing/near volume, `timeOn/timeOff` including midnight wrap, disable-on-foot, cars/aircraft, bikes/motorcycles, disable-exit, deleted/disabled state, while preserving unsupported flags as metadata.
-- [ ] 7.6 Add an `InteriorTransitionSystem` (or equivalently narrow runtime system) with explicit idle -> target-preparing -> committing -> suppressed states; keep this logic out of `CharacterControllerSystem`.
-- [ ] 7.7 During a transition, suspend player locomotion/transition re-entry, prepare target collision, atomically commit active area and destination transform/heading only when ready, and restore/retain coherent source state on failure.
-- [ ] 7.8 Implement anti-bounce suppression keyed to the destination ENEX/pair and release suppression only after the player exits the destination trigger volume; a timer may only be a supplemental guard.
-- [ ] 7.9 Add unit/integration tests for time gating, runtime access, all supported movement flags, deterministic overlapping candidates, target-load failure, anti-bounce, exterior -> interior, interior -> exterior, interior -> interior, destination position/heading, and collision-before-release ordering.
+- [ ] 7.5 Implement eligibility helpers for active source area, `timeOn/timeOff` including midnight wrap, disable-on-foot, cars/aircraft, bikes/motorcycles, disable-exit, deleted/disabled state, while preserving unsupported flags as metadata.
+- [ ] 7.6 Implement GTA-compatible ENEX containment: rotate the authored entrance rectangle in XY by `entranceAngle` and apply the dedicated GTA-style vertical acceptance rule; use the same normalized test for textual and transformed 2DFX ENEX.
+- [ ] 7.7 Add trigger tests for unrotated/rotated rectangles, boundary points, vertical accept/reject cases, transformed type 6 footprints, and deterministic selection when rotated ENEX volumes overlap.
+- [ ] 7.8 Add an `InteriorTransitionSystem` (or equivalently narrow runtime system) with explicit idle -> target-preparing -> committing -> suppressed states; keep this logic out of `CharacterControllerSystem`.
+- [ ] 7.9 Implement directional linked-pair destination resolution from gta-reversed `CEntryExit` behavior: resolve the correct spawn point, target area, and transition heading for each direction and do not assume the counterpart's `exitPosition`/`exitAngle` are always the final transform.
+- [ ] 7.10 Implement an equivalent-in-purpose `FindValidTeleportPoint()` step using existing world/collision queries so the final spawn point is clear/grounded and not embedded in geometry; abort coherently when no valid point is available.
+- [ ] 7.11 During a transition, suspend player locomotion/transition re-entry, resolve/validate the destination, prewarm target render + collision, and release/reveal only when collision is ready and the selected visual-readiness policy is satisfied. If collision is ready first, keep the transition/fade blocked until render is ready.
+- [ ] 7.12 Implement anti-bounce suppression keyed to the destination ENEX/pair and release suppression only after the player exits the GTA-compatible destination trigger volume; a timer may only be a supplemental guard.
+- [ ] 7.13 Add unit/integration tests for time gating, runtime access, all supported movement flags, directional pair spawn/heading semantics, cases that differ from naive counterpart `exitAngle`, valid-teleport correction/failure, render+collision readiness ordering, target-load failure, anti-bounce, exterior -> interior, interior -> exterior, and interior -> interior.
 
 ## 8. Native `nodes*.dat` parser
 
@@ -118,7 +131,7 @@
 ## 14. Browser debug tooling
 
 - [ ] 14.1 Extend the existing debugger/debug-actions bridge to report active area/interior and current interior-transition state without making the runtime depend on React.
-- [ ] 14.2 Add optional ENEX visualization showing nearby bounds, stable ID/name, source/target area, pair link, eligibility, and suppression state.
+- [ ] 14.2 Add optional ENEX visualization showing the rotated XY trigger footprint + vertical range, stable ID/name, source kind (text IPL or DFF 2DFX), source/target area, pair link, resolved teleport point/heading, render/collision readiness, eligibility, and suppression state.
 - [ ] 14.3 Add optional pedestrian path visualization showing nearby node IDs/positions, path widths, relevant flags, normal/cross-area links, and loaded path-area boundaries/cache state.
 - [ ] 14.4 Add a debug route request that accepts start/destination positions and draws the selected nearest nodes and resulting route/status/cost.
 - [ ] 14.5 Add unit/component tests where practical and manually verify that disabling debug tools has no effect on ENEX, path loading, pathfinding, or agent behavior.
@@ -126,9 +139,9 @@
 ## 15. Integration, regression, browser, and performance validation
 
 - [ ] 15.1 Add integration tests proving active-area render and collision filtering switch together and same-coordinate cells from different areas never alias.
-- [ ] 15.2 Add integration tests proving an ENEX transition cannot release the player until target collision is ready, including load failure/cancellation and anti-bounce after placement.
-- [ ] 15.3 Add end-to-end/local browser validation using a legitimate GTA SA installation: enter at least one real exterior ENEX, verify the correct original interior DFF/TXD content and collision, move inside without falling through the map, and exit to the correct exterior position/heading.
-- [ ] 15.4 Validate at least one interior-to-interior transition where real data provides a suitable case, or cover it with an integration fixture plus real exterior/interior browser case if no stable manual GTA case is selected.
+- [ ] 15.2 Add integration tests proving an ENEX transition cannot release the player until target collision is ready and cannot reveal an empty destination while required render meshes are pending; include independent render/collision completion order, load failure/cancellation, safe teleport correction, and anti-bounce after placement.
+- [ ] 15.3 Add end-to-end/local browser validation using a legitimate GTA SA installation: enter at least one real exterior ENEX, verify the correct original interior DFF/TXD content and collision are ready before reveal/control, move inside without falling through or spawning inside geometry, and exit to the correct GTA-resolved exterior position/heading.
+- [ ] 15.4 Validate at least one interior-to-interior transition where real data provides a suitable case, or cover it with an integration fixture plus real exterior/interior browser case if no stable manual GTA case is selected; include at least one transformed DFF 2DFX type 6 ENEX in real/synthetic integration coverage.
 - [ ] 15.5 Validate a real pedestrian route on `nodes*.dat` plus a route crossing at least one native path-area boundary; inspect the route through debug drawing for continuity.
 - [ ] 15.6 Add/retain regression tests for current exterior streaming, collision streaming, area 13, breakables, map viewer/manual selection, `CharacterControllerSystem.runPath()`, and `EnterVehicleSystem` approach/cancel/entry behavior.
 - [ ] 15.7 Profile representative nearest-node and A\* queries to confirm they do not scan all 64 areas, do not parse all path files at boot, and do not execute pathfinding every navigation frame.
@@ -137,8 +150,8 @@
 
 ## 16. Documentation and master-checklist completion
 
-- [ ] 16.1 Document the active-area/ENEX flow, supported ENEX flags, area 13 semantics, target-collision readiness, and known intentionally deferred interior gameplay in the appropriate architecture/feature docs.
+- [ ] 16.1 Document the active-area/ENEX flow, textual + DFF 2DFX type 6 sources, supported ENEX flags, rotated trigger/vertical semantics, linked spawn/heading resolution, safe teleport validation, area 13 semantics, render+collision readiness/fade behavior, and intentionally deferred interior gameplay.
 - [ ] 16.2 Document the native `nodes*.dat` parser/store, 8x8 lazy loading, graph provider, A\* cost/heuristic rules, NavigationAgent boundary, cancellation/replan contract, and future Web Worker/traffic extension points.
 - [ ] 16.3 Document how to regenerate `tests/original/path/nodes15.dat` through `npm run test:fixtures` and reiterate that GTA fixtures/assets are local/gitignored.
 - [ ] 16.4 Update `docs/WEB_THEFT_AUTO_IMPLEMENTATION_MASTER_CHECKLIST.md` items 8, 9, and 10 only after their acceptance criteria actually pass; do not mark items 14 (ped population) or 15 (full Ped AI) complete as a side effect of navigation infrastructure.
-- [ ] 16.5 Perform the final acceptance pass: `npm run lint:ts`, `npm test`, GTA fixture suite, browser interior entry/exit, correct interior render/collision, real node route, cross-area route, exterior streaming regression, and EnterVehicle/runPath regression. Record any remaining limitation before considering the OpenSpec change ready to archive.
+- [ ] 16.5 Perform the final acceptance pass: `npm run lint:ts`, `npm test`, GTA fixture suite, textual + DFF ENEX coverage, browser interior entry/exit, correct render/collision readiness before reveal, rotated trigger/teleport semantics, safe spawn correction, real node route, cross-area route, exterior streaming regression, and EnterVehicle/runPath regression. Record any remaining limitation before considering the OpenSpec change ready to archive.

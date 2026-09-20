@@ -7,9 +7,10 @@ These three foundations are coupled: interiors require area-aware render/collisi
 # What Changes
 
 - Parse GTA SA textual IPL `enex` sections into renderer-agnostic data while preserving every on-disk field and the full raw flag word.
+- Parse DFF 2DFX type 6 enter-exit effects, preserve their native fields/raw bytes, transform geometry-local ENEX through the placed object's transform, and normalize them into the same ENEX collection/pairing/runtime as textual IPL entries.
 - Extend resolved map definitions with entry/exit data and introduce explicit active-area semantics instead of spatially offsetting interiors.
 - Index render and collision data by GTA area/render level, treating area 13 as part of the exterior world according to existing project semantics.
-- Add an interior transition runtime that resolves linked ENEX pairs, enforces access/time/vehicle rules, preloads target collision before releasing the player, applies destination heading, and suppresses immediate destination re-triggering.
+- Add an interior transition runtime that resolves linked ENEX pairs, enforces access/time/vehicle rules, uses GTA-style rotated XY trigger/vertical tests, resolves teleport spawn/heading through `CEntryExit` semantics, finds a valid collision-safe teleport point, prewarms target render and collision before releasing the player, and suppresses immediate destination re-triggering.
 - Make both fetch/build and File System Access asset-selection paths include DFF/TXD assets referenced exclusively by interiors, sharing selection logic through `packages/game-build` instead of maintaining duplicate exterior-only scans.
 - Add a complete renderer-agnostic parser for GTA SA `nodes*.dat`, preserving vehicle nodes, pedestrian nodes, navi data, links, link lengths, intersection metadata, filler/trailing bytes, and raw flags.
 - Add a lazy 8x8 path-area store over the 64 original GTA path files, with area/radius lookup, caching, cross-area link resolution, and an API shape that can support future eviction.
@@ -23,7 +24,7 @@ These three foundations are coupled: interiors require area-aware render/collisi
 
 ## New Capabilities
 
-- `interiors-enex`: Parse, resolve, stream, transition into, and transition out of GTA SA interiors using ENEX and explicit active-area state, including complete interior assets and collision readiness.
+- `interiors-enex`: Parse textual IPL and DFF 2DFX type 6 ENEX, resolve/normalize them into one runtime, stream and transition into/out of GTA SA interiors using explicit active-area state, including complete interior assets plus render/collision readiness.
 - `gta-path-nodes`: Parse and lazily expose the original GTA SA `nodes0.dat` through `nodes63.dat` path graph with all pedestrian, vehicle, navigation, link, and intersection metadata preserved.
 - `npc-navigation`: Plan deterministic A\* routes over a generic navigation graph and provide reusable waypoint/steering infrastructure for later pedestrian AI, without implementing pedestrian population or full Ped AI in this change.
 
@@ -33,11 +34,11 @@ None. The project currently has no durable OpenSpec capability specifications to
 
 # Impact
 
-- **RenderWare/map data:** textual IPL parsing, resolved map definitions, area-aware world indexing, collision-cell binding, and a new path-node binary parser.
+- **RenderWare/map data:** textual IPL ENEX parsing, DFF 2DFX type 6 parsing/normalization, resolved map definitions, area-aware world indexing, collision-cell binding, and a new path-node binary parser.
 - **Asset pipeline:** shared placed-model discovery in `packages/game-build`, consumed by both `scripts/build-game.ts` and the local File System Access loader.
 - **Game runtime:** area state, interior transition orchestration, render/collision streaming area keys, generic navigation graph/pathfinder/agent interfaces, and GTA adapter implementations.
 - **Web app/debug:** runtime wiring in the existing bootstrap and non-essential debug visualisation/actions.
-- **Tests/fixtures:** an optional real `tests/original/path/nodes15.dat` fixture generated from a clean local GTA SA install, expanded ENEX fixtures/tests, and integration/regression coverage.
+- **Tests/fixtures:** an optional real `tests/original/path/nodes15.dat` fixture generated from a clean local GTA SA install, textual and DFF 2DFX ENEX fixtures/tests, exact trigger/teleport tests, and integration/regression coverage.
 - **Compatibility:** existing native/Docker asset flows remain unchanged in ownership; GTA assets stay local/gitignored. Existing `CharacterControllerSystem.runPath()` and `EnterVehicleSystem` remain supported and are regression-tested.
 
 # Dependency Order
