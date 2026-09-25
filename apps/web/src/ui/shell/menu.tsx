@@ -2,11 +2,11 @@ import type { ReactElement } from 'react';
 
 import { GAME_CONFIG, GAME_IDS, type GameId } from '../../game-config';
 
-/** External menu links. (Videos is a placeholder until the YouTube channel exists.) */
+/** Project links. */
 const LINKS: readonly { href: string; label: string }[] = [
-  { href: 'https://github.com/AlexSergey/opensa', label: 'GitHub' },
-  { href: 'https://github.com/AlexSergey/opensa/tree/main/blog', label: 'Blog' },
-  { href: 'https://opensa.cc/videos', label: 'Videos' },
+  { href: 'https://github.com/cCarllus/web-theft-auto', label: 'GitHub' },
+  { href: 'https://github.com/cCarllus/web-theft-auto/tree/main/blog', label: 'Blog' },
+  { href: 'https://github.com/cCarllus/web-theft-auto/issues', label: 'Issues' },
 ];
 
 interface MenuProps {
@@ -37,7 +37,11 @@ export function Menu({ onPlay }: MenuProps): ReactElement {
       ))}
       <p className="sa-menu__legal">
         Unofficial, non-commercial fan project — not affiliated with Rockstar Games / Take-Two. No game files included;
-        you bring your own copy. Rights holders: <a href="mailto:gooddev.sergey@gmail.com">contact us</a>.
+        you bring your own copy. Rights holders:{' '}
+        <a href="https://github.com/cCarllus/web-theft-auto/issues" rel="noopener noreferrer" target="_blank">
+          open an issue
+        </a>
+        .
       </p>
     </nav>
   );

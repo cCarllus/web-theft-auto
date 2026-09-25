@@ -17,7 +17,7 @@ import './shell.css';
 // The heavy game surface (three.js/Rapier) is code-split — fetched only past the menu.
 const GameCanvas = lazy(() => import('../canvas-host').then((module) => ({ default: module.CanvasHost })));
 
-const SUBTITLED = 'sa-logo--small sa-logo--titled sa-logo--described';
+const SMALL_LOGO = 'sa-logo--small';
 
 export function App(): ReactElement {
   const boot = useAssetBoot();
@@ -73,7 +73,7 @@ export function App(): ReactElement {
 
       {phase === 'menu' ? (
         <div className="sa-stage sa-stage--col">
-          <Logo className={SUBTITLED} />
+          <Logo className={SMALL_LOGO} />
           <p className="sa-tagline">
             Free and open source — a from-scratch game engine, built compatible with RenderWare (the tech behind GTA San
             Andreas).
@@ -84,7 +84,7 @@ export function App(): ReactElement {
 
       {phase === 'folder' ? (
         <div className="sa-stage sa-stage--col">
-          <Logo className={SUBTITLED} />
+          <Logo className={SMALL_LOGO} />
           <FolderPrompt
             detail={boot.detail}
             disclaimer={boot.disclaimerAccepted ? undefined : boot.disclaimer}
@@ -117,7 +117,7 @@ export function App(): ReactElement {
   );
 }
 
-/** Logo state per phase: a centered pulse while loading, the small subtitled mark otherwise. */
+/** Logo state per phase: a centered pulse while loading, the compact mark otherwise. */
 function logoClass(phase: BootPhase): string {
-  return phase === 'loading' || phase === 'warmup' ? 'sa-logo--pulse' : SUBTITLED;
+  return phase === 'loading' || phase === 'warmup' ? 'sa-logo--pulse' : SMALL_LOGO;
 }

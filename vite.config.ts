@@ -39,16 +39,15 @@ function emitHtaccess(): Plugin {
 }
 
 /**
- * Emit the social-share preview to `dist/assets/og.jpg` with a STABLE name (no content hash), so the
- * `og:image` / `twitter:image` meta can point at a fixed URL (https://opensa.cc/assets/og.jpg).
- * Source of truth: `apps/web/src/assets/og.jpg`.
+ * Emit the social-share preview to `dist/assets/og.png` with a STABLE name (no content hash).
+ * Source of truth: `apps/web/src/assets/og.png`.
  */
 function emitOgImage(): Plugin {
   return {
     generateBundle(): void {
       this.emitFile({
-        fileName: 'assets/og.jpg',
-        source: readFileSync(resolve(__dirname, 'apps/web/src/assets/og.jpg')),
+        fileName: 'assets/og.png',
+        source: readFileSync(resolve(__dirname, 'apps/web/src/assets/og.png')),
         type: 'asset',
       });
     },
@@ -66,7 +65,7 @@ function injectVersionComment(version: string): Plugin {
           return html; // skip the viewer entries
         }
 
-        return html.replace('<head>', `<head>\n    <!-- OpenSA v${version} -->`);
+        return html.replace('<head>', `<head>\n    <!-- Web Theft Auto San Andreas v${version} -->`);
       },
       order: 'pre',
     },

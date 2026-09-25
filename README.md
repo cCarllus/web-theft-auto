@@ -1,27 +1,17 @@
 <p align="center">
-  <img src="./assets/logo-repo.png" alt="OpenSA — an open-source game engine compatible with RenderWare, in the browser" width="420" />
+  <img src="./assets/logo-repo.png" alt="Web Theft Auto San Andreas" width="420" />
 </p>
 
 <p align="center">
-  <a href="https://opensa.cc"><img src="https://img.shields.io/badge/site-opensa.cc-2a7ae2" alt="Website" /></a>
+  <a href="https://github.com/cCarllus/web-theft-auto"><img src="https://img.shields.io/badge/GitHub-Web%20Theft%20Auto-2a7ae2" alt="GitHub repository" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-2a7ae2" alt="License: AGPL-3.0" /></a>
 </p>
 
-An open-source, from-scratch **game engine, built compatible with RenderWare** — the engine behind GTA San
-Andreas. Bring your own game files (or a total-conversion mod) and it streams the real world, models and
-physics straight into the browser, with no install.
+**Web Theft Auto San Andreas** is a browser-based GTA San Andreas reimplementation built around RenderWare
+asset support, world streaming, physics, vehicles and gameplay systems. Bring your own game files and run the
+world straight in the browser.
 
 > Unofficial, non-commercial fan project. Not affiliated with Rockstar Games or Take-Two.
-
-<p align="center">
-  <a href="https://opensa.cc"><img src="https://img.shields.io/badge/%E2%96%B6%20Play%20the%20Demo-opensa.cc-F55C07?style=for-the-badge" alt="Play the demo" /></a>
-</p>
-
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=J2P4gQd9NQo" title="Watch the OpenSA launch trailer">
-    <img src="https://img.youtube.com/vi/J2P4gQd9NQo/hqdefault.jpg" alt="OpenSA — an open-source game engine compatible with RenderWare, in the browser — launch trailer" width="640" />
-  </a>
-</p>
 
 ## Blog
 

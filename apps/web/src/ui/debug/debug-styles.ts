@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-/** Debugger theme — shared with the UI shell: black panel, white text, orange accent (from logo.svg). */
+/** Debugger theme — shared with the UI shell: black panel, white text, orange accent. */
 const ACCENT = '#fd8709';
 const FG = '#fff';
 const MUTED = '#989998';

@@ -68,12 +68,12 @@ importantly, **its built chunks (`static/games/gostown-*`) must not be uploaded*
 
 ## Other build-time injection (`vite.config.ts` plugins)
 
-- **`emit-og-image`** — copies `apps/web/src/assets/og.jpg` → `dist/assets/og.jpg` with a **stable** name (no content
-  hash), so `og:image` / `twitter:image` in `index.html` can point at `https://opensa.cc/assets/og.jpg`.
+- **`emit-og-image`** — copies `apps/web/src/assets/og.png` → `dist/assets/og.png` with a **stable** name (no content
+  hash), so `og:image` / `twitter:image` in `index.html` can use a stable project asset.
 - **`emit-favicons`** — copies the favicon set + `site.webmanifest` from `apps/web/src/assets/favicon/` to the build
   **root** with stable names, matching the `<link rel="icon"/manifest>` tags in `index.html` and the
   manifest's root-relative icon paths.
-- **`inject-version-comment`** — stamps `<!-- OpenSA v<version> -->` at the top of `index.html`'s `<head>`
+- **`inject-version-comment`** — stamps `<!-- Web Theft Auto San Andreas v<version> -->` at the top of `index.html`'s `<head>`
   (main entry only; viewer pages are skipped).
 
 ## Verify
@@ -83,5 +83,5 @@ npm run build      && npm run preview   # F2 → all debugger sections present; 
 npm run build:prod && npm run preview   # F2 → Atmosphere/Camera/Graphics/ProcObj/Map gone; viewers 404
 ```
 
-Both builds emit `dist/assets/og.jpg`, the favicon set + `site.webmanifest` at the `dist/` root, and the
+Both builds emit `dist/assets/og.png`, the favicon set + `site.webmanifest` at the `dist/` root, and the
 version comment in `dist/index.html`.

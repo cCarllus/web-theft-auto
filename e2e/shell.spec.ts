@@ -16,7 +16,7 @@ test.describe('ui shell', () => {
 
   test('the menu lists the games and external links', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.sa-logo svg')).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Web Theft Auto San Andreas' })).toBeVisible();
     await expect(page.getByRole('button', { name: GOSTOWN })).toBeVisible();
     await expect(page.getByRole('button', { name: SAN_ANDREAS })).toBeVisible();
     await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();

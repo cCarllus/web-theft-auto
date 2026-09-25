@@ -1,4 +1,4 @@
-/* UI shell theme + animations (plan 051). Black bg, white text, orange-gradient accent (from logo.svg). */
+/* UI shell theme + animations (plan 051). Black bg, white text, orange-gradient accent. */
 :root {
   --sa-bg: #000;
   --sa-fg: #fff;
@@ -43,7 +43,7 @@
     transform 1.2s ease;
 }
 
-.sa-logo svg {
+.sa-logo img {
   display: block;
   width: 100%;
   height: auto;
@@ -57,24 +57,6 @@
 .sa-logo--small {
   width: 400px;
   transform: translateY(-12vh);
-}
-
-/* Subtitle paths are hidden until revealed (staggered). */
-.sa-logo .logo-opensa-title,
-.sa-logo .logo-opensa-description {
-  opacity: 0;
-  transition: opacity 1.2s ease;
-}
-
-/* Reveal staggered after the 1.2s move-up: title, then description. */
-.sa-logo--titled .logo-opensa-title {
-  opacity: 1;
-  transition-delay: 1.2s;
-}
-
-.sa-logo--described .logo-opensa-description {
-  opacity: 1;
-  transition-delay: 1.9s;
 }
 
 @keyframes sa-pulse {
@@ -123,7 +105,7 @@
   text-transform: uppercase;
 }
 
-/* Tagline under the logo (the logo's own subtitle reads "open world. open source."). */
+/* Supporting copy under the game logo. */
 .sa-tagline {
   max-width: 360px;
   margin-top: -8px;

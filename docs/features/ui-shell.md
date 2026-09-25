@@ -2,8 +2,8 @@
 
 `apps/web/src/ui/shell/` — the app entry (plans 051 / 056). A lightweight React shell that paints instantly (no
 three.js), shows a **menu of the games in `GAME_CONFIG`**, runs the picked game's disclaimer + load behind a
-branded loading screen, then lazy-loads and reveals the game. Theme: black bg, white text, orange-gradient
-accent (from `logo.svg`).
+branded loading screen, then lazy-loads and reveals the game. Theme: black bg, white text and an
+orange-gradient accent.
 
 ## Implemented
 
@@ -21,10 +21,10 @@ playing`, plus `paused` and `error`. State carries the selected `game`; `SELECT`
 - **Instant shell, lazy game:** the initial bundle is React + shell + asset-loader + vfs + fflate
   (~77 kB gz); `app.tsx` does `lazy(() => import('../canvas-host'))`, so three.js/Rapier (~982 kB gz) load
   only past the menu.
-- **Logo** (`logo.tsx` inlines the SVG; `shell.css`): a centered pulse while loading, the small subtitled mark
-  on the menu.
+- **Logo** (`logo.tsx` renders `web-theft-auto-san-andreas.png`; `shell.css`): a centered pulse while loading
+  and the compact game mark on the menu.
 - **Components:** `menu` (one button per `GAME_CONFIG` game by `label`, disabled with `disabledNote`; +
-  Code/Blog/Videos links), `preloader` (bar + rotating status), `disclaimer` (the game's notice + OK, fetch
+  GitHub/Blog/Issues links), `preloader` (bar + rotating status), `disclaimer` (the game's notice + OK, fetch
   path), `error-panel` (Retry), `folder-prompt` (local loader: the game's disclaimer + the bring-your-own-files
   notice + "Choose game folder").
 - **Game integration** (`canvas-host.tsx`): `world-ready` — a system watches `Velocity.grounded[player]` and
@@ -35,7 +35,7 @@ playing`, plus `paused` and `error`. State carries the selected `game`; `SELECT`
 
 ## Known gaps / candidates
 
-- Placeholder external URLs (Code/Blog/Videos) in `menu.tsx`; prod GA id.
+- Prod GA id.
 - No settings/key-rebinding/save-slot/localization UI yet.
 - Textures load is "all at once" — per-zone lazy streaming is a future chunking phase.
 

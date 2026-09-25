@@ -63,7 +63,7 @@ Upload (FTP/SFTP/SSH) so the served layout is:
   android-chrome-192x192.png
   android-chrome-512x512.png
   site.webmanifest
-  assets/                # hashed js/css/fonts + stable og.jpg
+  assets/                # hashed js/css/fonts + stable og.png
   static/
     games/
       original-<version>/
