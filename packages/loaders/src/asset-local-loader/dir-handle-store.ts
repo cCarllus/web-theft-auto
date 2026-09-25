@@ -35,6 +35,9 @@ export interface DirHandleDeps {
   store: (handle: FileSystemDirectoryHandle) => Promise<void>;
 }
 
+/** A local install selected either through File System Access or a directory-upload fallback. */
+export type LocalInstallSelection = FileSystemDirectoryHandle | readonly File[];
+
 /** A restored handle and whether it is immediately usable (already granted + alive) without a gesture. */
 export interface RestoredDir {
   /** The stored handle (for a later gesture), or `null` if none is remembered. */
@@ -49,7 +52,14 @@ export function browserDirHandleDeps(): DirHandleDeps {
     clear: clearStoredDir,
     isAlive: isDirReadable,
     load: loadStoredDir,
-    pick: () => window.showDirectoryPicker({ id: 'opensa-game', mode: 'read' }),
+    pick: (): Promise<FileSystemDirectoryHandle> => {
+      const picker = window.showDirectoryPicker;
+      if (!picker) {
+        throw new Error('native directory picker is unavailable in this browser');
+      }
+
+      return picker.call(window, { id: 'opensa-game', mode: 'read' });
+    },
     queryPermission: (handle) => handle.queryPermission(READ),
     requestPermission: (handle) => handle.requestPermission(READ),
     store: storeDir,
@@ -72,7 +82,9 @@ export async function loadStoredDir(): Promise<FileSystemDirectoryHandle | null>
   try {
     const value = await requestToPromise<unknown>(tx(db, 'readonly').get(HANDLE_KEY));
 
-    return value instanceof FileSystemDirectoryHandle ? value : null;
+    return typeof FileSystemDirectoryHandle !== 'undefined' && value instanceof FileSystemDirectoryHandle
+      ? value
+      : null;
   } finally {
     db.close();
   }
@@ -100,6 +112,53 @@ export async function pickDir(
   await deps.store(picked);
 
   return picked;
+}
+
+/** Pick a whole directory through an input when showDirectoryPicker is unavailable. */
+export function pickDirectoryFiles(): Promise<readonly File[]> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.setAttribute('webkitdirectory', '');
+    input.setAttribute('directory', '');
+    input.hidden = true;
+
+    const cleanup = (): void => input.remove();
+    input.addEventListener(
+      'change',
+      () => {
+        const files = input.files ? [...input.files] : [];
+        cleanup();
+        if (files.length === 0) {
+          reject(new Error('no files selected — choose the GTA San Andreas install folder'));
+
+          return;
+        }
+        resolve(files);
+      },
+      { once: true },
+    );
+    input.addEventListener(
+      'cancel',
+      () => {
+        cleanup();
+        reject(new DOMException('folder selection cancelled', 'AbortError'));
+      },
+      { once: true },
+    );
+    document.body.append(input);
+    input.click();
+  });
+}
+
+/** Acquire the install from a user gesture, with a directory-input fallback for Brave. */
+export async function pickLocalInstall(stored: FileSystemDirectoryHandle | null): Promise<LocalInstallSelection> {
+  if (stored || typeof window.showDirectoryPicker === 'function') {
+    return pickDir(browserDirHandleDeps(), stored);
+  }
+
+  return pickDirectoryFiles();
 }
 
 /** Boot-time (no gesture): load the stored handle and report whether it is already usable without prompting. */

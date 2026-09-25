@@ -8,7 +8,7 @@ import { expect, type Page, test } from '@playwright/test';
  * and Cache Storage is available. The `data` group is `cached: false` — always re-fetched, never stored,
  * and a 404 there wipes the whole cache (build revoked).
  */
-const ORIGIN = 'http://localhost:3001';
+const ORIGIN = 'http://localhost:3002';
 const DIR = `${ORIGIN}/loader-e2e`;
 const MANIFEST_URL = `${DIR}/manifest.json`;
 const CACHE_NAME = 'opensa-assets-e2e';

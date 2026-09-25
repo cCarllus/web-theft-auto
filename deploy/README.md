@@ -10,7 +10,7 @@ How to put OpenSA online on a shared host with Apache and a bound domain. Two pa
 
 `VITE_STATIC_URL`, `VITE_GAME_TYPE`, `VITE_GA_ID` are baked in at build time. Put the **production** values
 in **`.env.production`** (gitignored; `vite build` auto-loads it in production mode and it overrides `.env`).
-Keep `.env` for local dev (e.g. `VITE_STATIC_URL=http://localhost:3001`).
+Keep `.env` for local dev (e.g. `VITE_STATIC_URL=http://localhost:3002`).
 
 ```dotenv
 # .env.production  (create it — gitignored)

@@ -74,7 +74,7 @@ npm run viewer:assets               # tsx scripts/build-viewer-assets.ts
 
 ### serve-static.ts
 
-The local + e2e static origin (`npm run serve:static`, port 3001 = `VITE_STATIC_URL`). Serves `static/`,
+The local + e2e static origin (`npm run serve:static`, port 3002 = `VITE_STATIC_URL`). Serves `static/`,
 which holds the generated viewer fixtures (`/viewer/*`, `npm run viewer:assets`) and the built
 `static/games/<game>-<version>/` archives — all gitignored. CORS is on; dev mode reads files fresh.
 

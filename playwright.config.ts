@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 // might be in another mode (e.g. the `local` bring-your-own-files loader). The e2e server always boots with
 // `--mode e2e`, loading the committed `.env.e2e` (which forces the deterministic fetch loader).
 const APP_PORT = 5174;
-const STATIC_PORT = 3001;
+const STATIC_PORT = 3002;
 
 export default defineConfig({
   expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.02 } },

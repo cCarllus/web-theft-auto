@@ -5,37 +5,41 @@
  * through the lazy reader / aren't used). Chromium-only.
  */
 import type { InstallSource } from './build-vfs';
+import type { LocalInstallSelection } from './dir-handle-store';
+import type { ByteRangeSource } from './img-reader';
 
-import { fileHandleSource, openLazyVer2 } from './img-reader';
+import { fileHandleSource, fileSource, openLazyVer2 } from './img-reader';
 
 const GTA3 = 'models/gta3.img';
 const GTA_INT = 'models/gta_int.img';
 /** Archives served lazily or unused — kept out of the loose-file set. */
 const EXCLUDED = new Set(['anim/anim.img', GTA3, GTA_INT]);
 
-/** Build an {@link InstallSource} over a picked install directory (opens the IMG archives lazily). */
-export async function browserInstallSource(dir: FileSystemDirectoryHandle): Promise<InstallSource> {
-  const handles = new Map<string, FileSystemFileHandle>();
-  for await (const file of walkFiles(dir)) {
-    handles.set(file.path, file.handle);
-  }
+interface InstallFile {
+  read(): Promise<Uint8Array>;
+  source(): Promise<ByteRangeSource>;
+}
 
-  const gta3Handle = handles.get(GTA3);
-  if (!gta3Handle) {
+/** Build an {@link InstallSource} over either browser directory picker (opens IMG archives lazily). */
+export async function browserInstallSource(selection: LocalInstallSelection): Promise<InstallSource> {
+  const files = isFileSelection(selection) ? indexSelectedFiles(selection) : await indexHandleFiles(selection);
+
+  const gta3File = files.get(GTA3);
+  if (!gta3File) {
     throw new Error('models/gta3.img not found — pick the GTA San Andreas install folder');
   }
-  const gta3 = await openLazyVer2(await fileHandleSource(gta3Handle));
-  const gtaIntHandle = handles.get(GTA_INT);
-  const gtaInt = gtaIntHandle ? await openLazyVer2(await fileHandleSource(gtaIntHandle)) : null;
+  const gta3 = await openLazyVer2(await gta3File.source());
+  const gtaIntFile = files.get(GTA_INT);
+  const gtaInt = gtaIntFile ? await openLazyVer2(await gtaIntFile.source()) : null;
 
-  const loose = [...handles.keys()].filter((path) => !EXCLUDED.has(path) && !path.endsWith('.ds_store'));
+  const loose = [...files.keys()].filter((path) => !EXCLUDED.has(path) && !path.endsWith('.ds_store'));
   const readLoose = async (path: string): Promise<Uint8Array> => {
-    const handle = handles.get(path);
-    if (!handle) {
+    const file = files.get(path);
+    if (!file) {
       throw new Error(`loose file not found: ${path}`);
     }
 
-    return new Uint8Array(await (await handle.getFile()).arrayBuffer());
+    return file.read();
   };
 
   return {
@@ -45,6 +49,47 @@ export async function browserInstallSource(dir: FileSystemDirectoryHandle): Prom
     readLoose,
     readLooseText: async (path) => new TextDecoder().decode(await readLoose(path)),
   };
+}
+
+/** Convert directory-input files into the same lowercased relative-path index as File System Access. */
+export function indexSelectedFiles(selected: readonly File[]): Map<string, InstallFile> {
+  const raw = selected.map((file) => ({
+    file,
+    path: (file.webkitRelativePath || file.name).replace(/\\/g, '/').replace(/^\.\//, ''),
+  }));
+  const root = raw[0]?.path.split('/')[0] ?? '';
+  const commonRoot = root && raw.every(({ path }) => path.startsWith(`${root}/`)) ? `${root}/` : '';
+
+  return new Map(
+    raw.map(({ file, path }) => {
+      const relative = (commonRoot ? path.slice(commonRoot.length) : path).toLowerCase();
+
+      return [
+        relative,
+        {
+          read: async () => new Uint8Array(await file.arrayBuffer()),
+          source: () => Promise.resolve(fileSource(file)),
+        },
+      ] as const;
+    }),
+  );
+}
+
+async function indexHandleFiles(dir: FileSystemDirectoryHandle): Promise<Map<string, InstallFile>> {
+  const files = new Map<string, InstallFile>();
+  for await (const file of walkFiles(dir)) {
+    const handle = file.handle;
+    files.set(file.path, {
+      read: async () => new Uint8Array(await (await handle.getFile()).arrayBuffer()),
+      source: () => fileHandleSource(handle),
+    });
+  }
+
+  return files;
+}
+
+function isFileSelection(selection: LocalInstallSelection): selection is readonly File[] {
+  return Array.isArray(selection);
 }
 
 /** Recursively yield every file handle under `dir` with its lowercased, `/`-joined relative path. */

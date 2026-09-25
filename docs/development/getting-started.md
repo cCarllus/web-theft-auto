@@ -75,7 +75,7 @@ re-downloaded and never stored. That makes `data` a **build-liveness probe**: de
 ### Native development
 
 ```sh
-npm run serve:static            # serves ./static (viewer fixtures + built game archives) at :3001 (VITE_STATIC_URL)
+npm run serve:static            # serves ./static (viewer fixtures + built game archives) at :3002 (VITE_STATIC_URL)
 npm run dev                     # Vite dev server for the app
 ```
 
@@ -89,7 +89,7 @@ docker compose up
 
 Open `http://localhost:5173` in the browser. The `original` game still uses the browser's File System
 Access API to choose your local GTA SA folder; GTA assets are never copied into the Docker image.
-`VITE_STATIC_URL` intentionally remains `http://localhost:3001`, because that request is made by the host
+`VITE_STATIC_URL` intentionally remains `http://localhost:3002`, because that request is made by the host
 browser rather than by another container.
 
 `GTA_SA_PATH` is optional and is only needed to regenerate the real test fixtures inside Docker. Copy the
@@ -104,7 +104,7 @@ docker compose --env-file .env.docker --profile tools run --rm test
 
 The regular `docker compose up` flow does not read or require `GTA_SA_PATH`.
 
-The app reads `VITE_STATIC_URL` (default `http://localhost:3001`, see `.env`). The UI shell (plans 051 / 056,
+The app reads `VITE_STATIC_URL` (default `http://localhost:3002`, see `.env`). The UI shell (plans 051 / 056,
 `apps/web/src/ui/shell/`) shows a **menu of the games in `GAME_CONFIG`** (`apps/web/src/game-config.tsx`); picking one runs its
 disclaimer → the **asset loader** (plan 049) loads `static/<game>-<version>/` into the **VFS** (plan 050,
 unzip + verify) → the lazily-loaded game runs entirely from the VFS.

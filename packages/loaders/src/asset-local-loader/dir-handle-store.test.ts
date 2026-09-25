@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { DirHandleDeps } from './dir-handle-store';
 
-import { pickDir, restoreDir } from './dir-handle-store';
+import { pickDir, pickLocalInstall, restoreDir } from './dir-handle-store';
 
 const STORED = { name: 'stored' } as unknown as FileSystemDirectoryHandle;
 const PICKED = { name: 'picked' } as unknown as FileSystemDirectoryHandle;
@@ -86,5 +86,36 @@ describe('pickDir', () => {
       await expect(pickDir(d, null)).resolves.toBe(PICKED);
       expect(d.store).toHaveBeenCalledWith(PICKED);
     });
+  });
+});
+
+describe('pickLocalInstall', () => {
+  it('falls back to a webkitdirectory input when showDirectoryPicker is unavailable', async () => {
+    const file = { name: 'gta3.img' } as File;
+    const listeners = new Map<string, EventListener>();
+    const click = vi.fn(() => listeners.get('change')?.(new Event('change')));
+    const setAttribute = vi.fn();
+    const input = {
+      addEventListener: vi.fn((name: string, listener: EventListener) => listeners.set(name, listener)),
+      click,
+      files: [file],
+      hidden: false,
+      multiple: false,
+      remove: vi.fn(),
+      setAttribute,
+      type: '',
+    } as unknown as HTMLInputElement;
+    const append = vi.fn();
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('document', { body: { append }, createElement: () => input });
+
+    try {
+      await expect(pickLocalInstall(null)).resolves.toEqual([file]);
+      expect(setAttribute).toHaveBeenCalledWith('webkitdirectory', '');
+      expect(click).toHaveBeenCalledOnce();
+      expect(append).toHaveBeenCalledWith(input);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

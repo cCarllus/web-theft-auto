@@ -31,7 +31,7 @@ teleports, …) live in the runtime catalogue **`apps/web/src/game-config.tsx`**
 
 | Env var           | Default                 | Effect                                                                               |
 | ----------------- | ----------------------- | ------------------------------------------------------------------------------------ |
-| `VITE_STATIC_URL` | `http://localhost:3001` | Where built game archives + viewer fixtures are served (see `npm run serve:static`). |
+| `VITE_STATIC_URL` | `http://localhost:3002` | Where built game archives + viewer fixtures are served (see `npm run serve:static`). |
 | `VITE_GA_ID`      | _(unset)_               | Google Analytics id; unset → analytics skipped.                                      |
 
 **`scripts/build-game.ts`** reads the per-game `mainCharacter` + `vehicles` from `GAME_CONFIG` (by `--game`),

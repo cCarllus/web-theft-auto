@@ -23,6 +23,6 @@ RUN HUSKY=0 npm ci
 
 COPY . .
 
-EXPOSE 5173 3001
+EXPOSE 5173 3002
 
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

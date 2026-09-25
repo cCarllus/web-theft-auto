@@ -27,6 +27,11 @@ export interface LazyImgArchive {
 export async function fileHandleSource(handle: FileSystemFileHandle): Promise<ByteRangeSource> {
   const file = await handle.getFile();
 
+  return fileSource(file);
+}
+
+/** A byte-range source over a browser File (used by the directory-input fallback). */
+export function fileSource(file: File): ByteRangeSource {
   return {
     size: file.size,
     slice: async (start, end) => new Uint8Array(await file.slice(start, end).arrayBuffer()),

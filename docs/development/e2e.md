@@ -14,7 +14,7 @@ npm run e2e:update     # regenerate screenshot baselines
 
 `playwright.config.ts` starts two `webServer`s for you (reused if already running locally):
 
-- `npm run serve:static` — serves `static/` on :3001 (`VITE_STATIC_URL`): the `static/viewer/` fixtures
+- `npm run serve:static` — serves `static/` on :3002 (`VITE_STATIC_URL`): the `static/viewer/` fixtures
   (`npm run viewer:assets`) **and** the built `static/games/<game>-<version>/` archives — all gitignored.
 - `npm run dev -- --mode e2e --port 5174 --strictPort` — the Vite app on **:5174** (`baseURL`). The dedicated
   port (not the usual 5173) means the lane never reuses a hand-started dev server. `--mode e2e` loads the

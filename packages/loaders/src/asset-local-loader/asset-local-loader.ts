@@ -1,10 +1,9 @@
 import { looseGroup } from '@opensa/game-build/partition';
 
 /**
- * The local asset loader (plan 053): reads a user-picked **raw GTA San Andreas install** folder via the File
- * System Access API and converts it in-browser to the same in-memory VFS the fetch loader produces — so the
- * downstream flow is identical. The picked folder handle is remembered (IndexedDB) and not re-prompted unless
- * it becomes invalid. Chromium-only; opt-in via `VITE_ASSET_LOADER=local`.
+ * The local asset loader (plan 053): reads a user-picked **raw GTA San Andreas install** folder using the File
+ * System Access API when available, or a directory-input fallback otherwise, and converts it in-browser to the
+ * same in-memory VFS the fetch loader produces. Native directory handles are remembered in IndexedDB.
  *
  * `prepare()` does the one user-gesture step (the folder prompt) and is called from the Play click; `init()`
  * scans + selects the asset set (same buckets as `scripts/build-game.ts`) and returns a synthesised manifest;
@@ -12,12 +11,12 @@ import { looseGroup } from '@opensa/game-build/partition';
  */
 import type { AssetLoader, AssetLoaderEvents, ChunkInfo, GroupName, Manifest } from '../types';
 import type { InstallPlan, InstallSource } from './build-vfs';
-import type { RestoredDir } from './dir-handle-store';
+import type { LocalInstallSelection, RestoredDir } from './dir-handle-store';
 
 import { Emitter } from '../emitter';
 import { GROUP_NAMES } from '../manifest';
 import { readEntry, selectInstallEntries } from './build-vfs';
-import { browserDirHandleDeps, pickDir, restoreDir } from './dir-handle-store';
+import { browserDirHandleDeps, pickLocalInstall, restoreDir } from './dir-handle-store';
 import { browserInstallSource } from './install-source';
 
 export interface AssetLocalLoaderConfig {
@@ -35,9 +34,9 @@ export interface AssetLocalLoaderConfig {
 /** Seams for testing without the File System Access API; default to the real browser wiring. */
 export interface AssetLocalLoaderDeps {
   /** Resolve a usable directory, prompting if needed (USER GESTURE) — given the boot-restored handle. */
-  acquireDir: (stored: FileSystemDirectoryHandle | null) => Promise<FileSystemDirectoryHandle>;
-  /** Open an {@link InstallSource} over a directory handle. */
-  openSource: (dir: FileSystemDirectoryHandle) => Promise<InstallSource>;
+  acquireDir: (stored: FileSystemDirectoryHandle | null) => Promise<LocalInstallSelection>;
+  /** Open an {@link InstallSource} over the selected directory. */
+  openSource: (dir: LocalInstallSelection) => Promise<InstallSource>;
   /** Boot-time (no gesture): load the remembered handle + whether it is already usable. */
   restoreDir: () => Promise<RestoredDir>;
 }
@@ -52,7 +51,7 @@ export class AssetLocalLoader implements AssetLoader {
   readonly events = new Emitter<AssetLoaderEvents>();
 
   private readonly deps: AssetLocalLoaderDeps;
-  private dir: FileSystemDirectoryHandle | null = null;
+  private dir: LocalInstallSelection | null = null;
   private plan: InstallPlan | null = null;
   private source: InstallSource | null = null;
   private stored: FileSystemDirectoryHandle | null = null;
@@ -62,8 +61,7 @@ export class AssetLocalLoader implements AssetLoader {
     deps?: Partial<AssetLocalLoaderDeps>,
   ) {
     this.deps = {
-      acquireDir:
-        deps?.acquireDir ?? ((stored): Promise<FileSystemDirectoryHandle> => pickDir(browserDirHandleDeps(), stored)),
+      acquireDir: deps?.acquireDir ?? pickLocalInstall,
       openSource: deps?.openSource ?? browserInstallSource,
       restoreDir: deps?.restoreDir ?? ((): Promise<RestoredDir> => restoreDir(browserDirHandleDeps())),
     };
