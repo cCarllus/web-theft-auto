@@ -20,6 +20,16 @@
 
 ---
 
+## Git Commit Rules
+
+- Before creating or suggesting a commit message, read `.github/commit-message-instructions.md`.
+- Follow that file exactly for AI-generated commit messages.
+- Use only commit types accepted by `.commitlintrc.cjs`.
+- Never bypass Husky or commitlint with `--no-verify`.
+- If staged changes are unrelated, recommend separate commits instead of inventing one oversized subject.
+
+---
+
 ## TypeScript Rules
 
 - Use TypeScript strict mode
